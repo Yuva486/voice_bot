@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Motor Vehicle Liability Determination Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap');
+
+  :root {
+    --bg-color: #1e1e2f;
+    --user-msg-bg: #4a90e2;
+    --bot-msg-bg: #2f2f45;
+    --text-color: #e0e0e0;
+    --btn-bg: #4a90e2;
+    --btn-hover-bg: #357ABD;
+    --mic-active-color: #e74c3c;
+    --form-bg: #3a3a56;
+    --form-label: #a0a0c0;
+    --form-input-bg: #2f2f45;
+    --form-input-color: #ddd;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg-color);
+    font-family: 'Montserrat', sans-serif;
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100vh;
+    padding: 10px;
+  }
+
+  #app-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+  }
+
+  #chat-form-wrapper {
+    display: flex;
+    width: 100%;
+    gap: 20px;
+  }
+
+  #chat-container {
+    flex: 1;
+    max-width: 400px;
+    height: 600px;
+    background: #28293d;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.7);
+  }
+
+  #chat-header {
+    padding: 18px 20px;
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--btn-bg);
+    border-bottom: 1px solid #444560;
+    user-select: none;
+  }
+
+  #chat-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+
+  .message {
+    max-width: 80%;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    border-radius: 18px;
+    line-height: 1.4;
+    font-size: 1rem;
+    word-wrap: break-word;
+    user-select: text;
+    box-shadow: 0 2px 5px rgb(0 0 0 / 0.15);
+  }
+
+  .user-message {
+    background: var(--user-msg-bg);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+  }
+
+  .bot-message {
+    background: var(--bot-msg-bg);
+    color: #c0c0f0;
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+  }
+
+  #input-area {
+    display: flex;
+    padding: 12px 15px;
+    border-top: 1px solid #444560;
+    justify-content: center;
+  }
+
+  #user-input, #send-btn {
+    display: none;
+  }
+
+  #mic-btn {
+    width: 60px;
+    height: 60px;
+    background: var(--btn-bg);
+    border-radius: 50%;
+    position: relative;
+    transition: background-color 0.25s ease;
+    cursor: pointer;
+  }
+
+  #mic-btn[aria-pressed="true"] {
+    background: var(--mic-active-color);
+    box-shadow: 0 0 15px var(--mic-active-color);
+  }
+
+  #mic-btn svg {
+    fill: white;
+    width: 28px;
+    height: 28px;
+    margin: auto;
+    display: block;
+    margin-top: 16px;
+  }
+
+  #mic-btn:active {
+    background-color: var(--btn-hover-bg);
+  }
+
+  /* Scrollbar */
+  #chat-messages::-webkit-scrollbar {
+    width: 6px;
+  }
+  #chat-messages::-webkit-scrollbar-thumb {
+    background: #55557a;
+    border-radius: 3px;
+  }
+
+  /* Form styles */
+  #form-container {
+    flex: 1.2;
+    max-width: 480px;
+    height: 600px;
+    overflow-y: auto;
+    background: var(--form-bg);
+    border-radius: 12px;
+    padding: 20px;
+    color: var(--text-color);
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.7);
+  }
+
+  #form-container h2 {
+    margin-top: 0;
+    color: var(--btn-bg);
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 12px;
+    user-select: none;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-label {
+    display: block;
+    font-weight: 600;
+    color: var(--form-label);
+    margin-bottom: 4px;
+    user-select: none;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: none;
+    background: var(--form-input-bg);
+    color: var(--form-input-color);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+  }
+
+  /* Summary modal styles */
+  #summary-modal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(30,30,47,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    padding: 15px;
+  }
+  #summary-modal.active {
+    visibility: visible;
+    opacity: 1;
+  }
+  #summary-content {
+    background: #2f2f45;
+    padding: 20px;
+    border-radius: 12px;
+    max-height: 85vh;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 360px;
+    color: #ccc;
+  }
+  #summary-content h2 {
+    margin-top: 0;
+    color: var(--btn-bg);
+  }
+  #summary-content dl {
+    margin: 0;
+  }
+  #summary-content dt {
+    font-weight: 600;
+    margin-top: 12px;
+  }
+  #summary-content dd {
+    margin-left: 0;
+    margin-bottom: 8px;
+    color: #eee;
+  }
+  #close-summary-btn {
+    margin-top: 15px;
+    width: 100%;
+    padding: 10px 0;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 20px;
+    background: var(--btn-bg);
+    border: none;
+    color: white;
+    font-size: 1rem;
+  }
+  #close-summary-btn:active {
+    background: var(--btn-hover-bg);
+  }
+
+  /* Responsive: stack the chat and form on narrow screens */
+  @media (max-width: 800px) {
+    #chat-form-wrapper {
+      flex-direction: column;
+      align-items: center;
+    }
+    #chat-container, #form-container {
+      max-width: 100%;
+      width: 100%;
+      height: 50vh;
+      margin-bottom: 15px;
+      border-radius: 0;
+    }
+    #form-container {
+      height: 50vh;
+    }
+  }
+</style>
+</head>
+<body>
+  <div id="app-container">
+    <div id="chat-form-wrapper">
+      <div id="chat-container" role="main" aria-label="Motor Vehicle Liability Determination Tool interface">
+        <header id="chat-header">Motor Vehicle Liability Determination Tool</header>
+        <section id="chat-messages" aria-live="polite" aria-atomic="true"></section>
+        <form id="input-area" aria-label="Voice input form">
+          <input 
+            id="user-input" 
+            type="text" 
+            autocomplete="off" 
+            aria-required="true" 
+            aria-label="Answer input field"
+          />
+          <button type="submit" id="send-btn" aria-label="Send answer" disabled>Send</button>
+          <button type="button" id="mic-btn" aria-label="Start voice input" aria-pressed="false" title="Start voice input">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3z"></path>
+              <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      <div id="form-container" aria-label="Accident report form">
+        <h2>Accident Report Form</h2>
+        <form id="report-form" autocomplete="off" novalidate>
+          <!-- Dynamic form fields inserted by JS -->
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div id="summary-modal" role="dialog" aria-modal="true" aria-labelledby="summary-title" tabindex="-1">
+    <div id="summary-content">
+      <h2 id="summary-title">Accident Report Summary</h2>
+      <dl id="summary-list"></dl>
+      <button id="close-summary-btn" aria-label="Close summary">Close</button>
+    </div>
+  </div>
+
+<script>
+  const chatMessages = document.getElementById('chat-messages');
+  const userInput = document.getElementById('user-input');
+  const micBtn = document.getElementById('mic-btn');
+  const sendBtn = document.getElementById('send-btn');
+
+  const formContainer = document.getElementById('report-form');
+
+  const summaryModal = document.getElementById('summary-modal');
+  const summaryList = document.getElementById('summary-list');
+  const closeSummaryBtn = document.getElementById('close-summary-btn');
+
+  const questions = [
+    "When did the accident happen?",
+    "Where did the accident occur?",
+    "What type of road was it? For example, highway or residential street?",
+    "Was it during day or night?",
+    "What was the weather like at the time?",
+    "What were the road conditions?",
+    "How many vehicles were involved?",
+    "Were there any pedestrians or cyclists involved?",
+    "Was there any construction in the area?",
+    "Was traffic heavy or light at the time?",
+    "What were you driving? Make, model, year.",
+    "What type of vehicle is it?",
+    "Was your vehicle damaged? If yes, where?",
+    "Who was the other driver and what vehicle were they driving?",
+    "What type of vehicle was the other party driving?",
+    "Was either driver using a phone or distracted?",
+    "Was your seatbelt fastened?",
+    "Was the other driver wearing a seatbelt?",
+    "Did either vehicle have mechanical issues?",
+    "Was anyone under the influence of drugs or alcohol?",
+    "What direction were you traveling?",
+    "What direction was the other vehicle traveling?",
+    "What was your speed at the time?",
+    "What was the other vehicle’s speed?",
+    "Were you following the speed limit?",
+    "Were you changing lanes or turning?",
+    "Was the other vehicle changing lanes or turning?",
+    "Did either vehicle run a red light or stop sign?",
+    "Did you yield when required?",
+    "Was anyone reversing or parked?",
+    "Where did your vehicle get hit?",
+    "Where did the other vehicle get hit?",
+    "What part of the road were you in? For example, left lane or right lane?",
+    "Did airbags deploy in your vehicle?",
+    "Did airbags deploy in the other vehicle?",
+    "Was there any vehicle rollover?",
+    "Was there secondary impact, for example hitting a tree or pole?",
+    "Was a tow truck needed?",
+    "Was the accident reported to insurance?",
+    "Was the accident reported to the police?",
+    "Were there any witnesses?",
+    "Do you have the witness contact information?",
+    "Did you take photos of the scene?",
+    "Do you have dashcam or CCTV footage?",
+    "Did the police assign fault at the scene?",
+    "Do you have a copy of the police report?",
+    "Have you spoken to the other driver after the accident?",
+    "Were there any injuries? If so, to whom?",
+    "Do you want to provide any additional information?",
+    "Would you like a summary of the findings once complete?"
+  ];
+
+  let currentQuestionIndex = 0;
+  const answers = [];
+
+  // Create form fields dynamically
+  function createFormFields() {
+    formContainer.innerHTML = '';
+    questions.forEach((question, idx) => {
+      const group = document.createElement('div');
+      group.className = 'form-group';
+
+      const label = document.createElement('label');
+      label.className = 'form-label';
+      label.setAttribute('for', 'answer-' + idx);
+      label.textContent = question;
+
+      const input = document.createElement('input');
+      input.className = 'form-input';
+      input.type = 'text';
+      input.id = 'answer-' + idx;
+      input.name = 'answer-' + idx;
+      input.readOnly = true;
+      input.placeholder = 'Answer will appear here...';
+
+      group.appendChild(label);
+      group.appendChild(input);
+      formContainer.appendChild(group);
+    });
+  }
+
+  createFormFields();
+
+  function speakText(text) {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 1;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function appendMessage(text, sender) {
+    const msgEl = document.createElement('div');
+    msgEl.classList.add('message');
+    msgEl.classList.add(sender === 'user' ? 'user-message' : 'bot-message');
+    msgEl.textContent = text;
+    chatMessages.appendChild(msgEl);
+    scrollToBottom();
+  }
+
+  function updateFormField(index, answer) {
+    const input = document.getElementById('answer-' + index);
+    if (input) {
+      input.value = answer;
+    }
+  }
+
+  function askNextQuestion() {
+    if (currentQuestionIndex < questions.length) {
+      const question = questions[currentQuestionIndex];
+      appendMessage(question, 'bot');
+      speakText(question);
+    } else {
+      appendMessage("Thank you for your responses. Would you like a summary of the findings?", 'bot');
+      speakText("Thank you for your responses. Would you like a summary of the findings?");
+    }
+  }
+
+  function showSummary() {
+    summaryList.innerHTML = '';
+    questions.forEach((q, i) => {
+      const dt = document.createElement('dt');
+      dt.textContent = q;
+      const dd = document.createElement('dd');
+      dd.textContent = answers[i] || '(No answer)';
+      summaryList.appendChild(dt);
+      summaryList.appendChild(dd);
+    });
+    summaryModal.classList.add('active');
+    summaryModal.focus();
+  }
+
+  closeSummaryBtn.addEventListener('click', () => {
+    summaryModal.classList.remove('active');
+  });
+
+  function handleUserAnswer(transcript) {
+    let answer = transcript.trim();
+    if (!answer) return;
+
+    appendMessage(answer, 'user');
+    if (currentQuestionIndex >= questions.length) {
+      const lower = answer.toLowerCase();
+      if (lower.startsWith('y')) {
+        appendMessage("Generating summary...", 'bot');
+        speakText("Generating summary...");
+        setTimeout(showSummary, 1000);
+      } else {
+        appendMessage("Okay, thank you! If you want to review the summary later, refresh the page.", 'bot');
+        speakText("Okay, thank you! If you want to review the summary later, refresh the page.");
+      }
+      return;
+    }
+    answers[currentQuestionIndex] = answer;
+    updateFormField(currentQuestionIndex, answer);
+    currentQuestionIndex++;
+    setTimeout(askNextQuestion, 700);
+  }
+
+  window.addEventListener('load', () => {
+    const welcomeMsg = "Hi! I'm the Motor Vehicle Liability Determination Tool. Please answer my questions by speaking clearly into the microphone.";
+    appendMessage(welcomeMsg, 'bot');
+    speakText(welcomeMsg);
+    setTimeout(askNextQuestion, 1500);
+  });
+
+  window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  if (window.SpeechRecognition === null) {
+    micBtn.style.display = 'none';
+    appendMessage("Sorry, your browser does not support voice input. Please use a supported browser for voice interaction.", "bot");
+  } else {
+    const recognition = new window.SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    let isRecognizing = false;
+
+    function toggleMic() {
+      if (isRecognizing) {
+        recognition.stop();
+      } else {
+        try {
+          recognition.start();
+        } catch (e) {}
+      }
+    }
+
+    recognition.addEventListener('start', () => {
+      isRecognizing = true;
+      micBtn.setAttribute('aria-pressed', 'true');
+      micBtn.title = 'Stop voice input';
+    });
+
+    recognition.addEventListener('end', () => {
+      isRecognizing = false;
+      micBtn.setAttribute('aria-pressed', 'false');
+      micBtn.title = 'Start voice input';
+    });
+
+    recognition.addEventListener('result', (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript && transcript.trim() !== '') {
+        handleUserAnswer(transcript);
+      }
+    });
+
+    recognition.addEventListener('error', (event) => {
+      isRecognizing = false;
+      micBtn.setAttribute('aria-pressed', 'false');
+      micBtn.title = 'Start voice input';
+      appendMessage("Sorry, voice input error occurred: " + event.error, "bot");
+      speakText("Sorry, voice input error occurred.");
+    });
+
+    micBtn.addEventListener('click', toggleMic);
+  }
+</script>
+</body>
+</html>
+</content>
+</create_file>
